@@ -1,0 +1,14 @@
+---
+- name: Install base packages on Debian
+  ansible.builtin.apt:
+    name: "{{ base_packages + (['fail2ban'] if base_fail2ban_enabled else []) + ([base_debian_firewall_package] if base_firewall_enabled else []) }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_facts.os_family == "Debian"
+
+- name: Install base packages on RedHat
+  ansible.builtin.package:
+    name: "{{ base_packages + (['fail2ban'] if base_fail2ban_enabled else []) + ([base_redhat_firewall_package] if base_firewall_enabled else []) }}"
+    state: present
+  when: ansible_facts.os_family == "RedHat"
