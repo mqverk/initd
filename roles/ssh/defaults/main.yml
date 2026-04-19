@@ -1,0 +1,11 @@
+---
+ssh_service_name: "{{ 'ssh' if ansible_facts.os_family == 'Debian' else 'sshd' }}"
+ssh_authorized_user: root
+ssh_public_keys: []
+
+ssh_disable_password_auth: true
+ssh_permit_root_login: prohibit-password
+ssh_max_auth_tries: 3
+ssh_client_alive_interval: 300
+ssh_client_alive_count_max: 2
+sshd_hardening_config_path: /etc/ssh/sshd_config.d/99-hardening.conf
