@@ -1,0 +1,3 @@
+*.retry
+*.retry.json
+*.log
