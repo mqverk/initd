@@ -1,0 +1,20 @@
+---
+- name: Validate app source mode
+  ansible.builtin.assert:
+    that:
+      - app_source in ['tarball', 'git']
+    fail_msg: "app_source must be either 'tarball' or 'git'."
+
+- name: Validate tarball settings
+  ansible.builtin.assert:
+    that:
+      - app_tarball_url | length > 0
+    fail_msg: "app_tarball_url is required when app_source=tarball."
+  when: app_source == "tarball"
+
+- name: Validate git settings
+  ansible.builtin.assert:
+    that:
+      - app_git_repo | length > 0
+    fail_msg: "app_git_repo is required when app_source=git."
+  when: app_source == "git"
