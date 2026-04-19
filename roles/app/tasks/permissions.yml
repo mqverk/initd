@@ -1,0 +1,9 @@
+---
+- name: Ensure app ownership and permissions
+  ansible.builtin.file:
+    path: "{{ app_release_path }}"
+    state: directory
+    owner: "{{ app_owner }}"
+    group: "{{ app_group }}"
+    mode: "u=rwX,g=rX,o=rX"
+    recurse: true
