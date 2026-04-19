@@ -1,0 +1,12 @@
+---
+- name: Prevent lockout when password auth is disabled
+  ansible.builtin.assert:
+    that:
+      - not ssh_disable_password_auth or ssh_public_keys | length > 0
+    fail_msg: >-
+      At least one ssh_public_keys value is required when ssh_disable_password_auth is true.
+
+- name: Load account details for authorized user
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ ssh_authorized_user }}"
