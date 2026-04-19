@@ -1,0 +1,16 @@
+---
+- name: Ensure authorized user's .ssh directory exists
+  ansible.builtin.file:
+    path: "{{ ansible_facts.getent_passwd[ssh_authorized_user][4] }}/.ssh"
+    state: directory
+    owner: "{{ ssh_authorized_user }}"
+    group: "{{ ssh_authorized_user }}"
+    mode: "0700"
+
+- name: Install authorized public keys
+  ansible.posix.authorized_key:
+    user: "{{ ssh_authorized_user }}"
+    key: "{{ item }}"
+    state: present
+    manage_dir: false
+  loop: "{{ ssh_public_keys }}"
