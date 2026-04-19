@@ -1,0 +1,6 @@
+---
+nginx_service_name: nginx
+nginx_listen_port: 80
+nginx_server_name: _
+nginx_document_root: "{{ app_deploy_path }}/current"
+nginx_client_max_body_size: 4m
