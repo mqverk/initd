@@ -1,0 +1,25 @@
+---
+- name: Ensure sshd drop-in directory exists
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure main sshd config includes drop-in files
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^Include\s+/etc/ssh/sshd_config\.d/\*\.conf$'
+    line: Include /etc/ssh/sshd_config.d/*.conf
+    insertbefore: BOF
+  notify: restart ssh
+
+- name: Apply SSH hardening settings
+  ansible.builtin.template:
+    src: sshd_hardening.conf.j2
+    dest: "{{ sshd_hardening_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart ssh
