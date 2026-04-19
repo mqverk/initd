@@ -1,0 +1,16 @@
+---
+app_source: tarball
+
+app_tarball_url: ""
+app_tarball_strip_components: 1
+app_tmp_tarball: /tmp/initd-app.tar.gz
+
+app_git_repo: ""
+app_git_version: main
+
+app_deploy_path: /var/www/initd
+app_release_path: "{{ app_deploy_path }}/current"
+app_cleanup_artifacts: true
+
+app_owner: "{{ 'www-data' if ansible_facts.os_family == 'Debian' else 'nginx' }}"
+app_group: "{{ 'www-data' if ansible_facts.os_family == 'Debian' else 'nginx' }}"
