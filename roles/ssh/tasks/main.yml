@@ -1,0 +1,59 @@
+---
+- name: Prevent lockout when password auth is disabled
+  ansible.builtin.assert:
+    that:
+      - not ssh_disable_password_auth or ssh_public_keys | length > 0
+    fail_msg: >-
+      At least one ssh_public_keys value is required when ssh_disable_password_auth is true.
+
+- name: Load account details for authorized user
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ ssh_authorized_user }}"
+
+- name: Ensure authorized user's .ssh directory exists
+  ansible.builtin.file:
+    path: "{{ ansible_facts.getent_passwd[ssh_authorized_user][4] }}/.ssh"
+    state: directory
+    owner: "{{ ssh_authorized_user }}"
+    group: "{{ ssh_authorized_user }}"
+    mode: "0700"
+
+- name: Install authorized public keys
+  ansible.posix.authorized_key:
+    user: "{{ ssh_authorized_user }}"
+    key: "{{ item }}"
+    state: present
+    manage_dir: false
+  loop: "{{ ssh_public_keys }}"
+
+- name: Ensure sshd drop-in directory exists
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure main sshd config includes drop-in files
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^Include\s+/etc/ssh/sshd_config\.d/\*\.conf$'
+    line: Include /etc/ssh/sshd_config.d/*.conf
+    insertbefore: BOF
+  notify: restart ssh
+
+- name: Apply SSH hardening settings
+  ansible.builtin.template:
+    src: sshd_hardening.conf.j2
+    dest: "{{ sshd_hardening_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart ssh
+
+- name: Ensure SSH service is enabled and running
+  ansible.builtin.service:
+    name: "{{ ssh_service_name }}"
+    enabled: true
+    state: started
