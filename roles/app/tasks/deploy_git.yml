@@ -1,0 +1,38 @@
+---
+- name: Check whether release path is already a git worktree
+  ansible.builtin.stat:
+    path: "{{ app_release_path }}/.git"
+  register: app_git_metadata
+  when: app_source == "git"
+
+- name: Check whether release path exists
+  ansible.builtin.stat:
+    path: "{{ app_release_path }}"
+  register: app_release_path_stat
+  when: app_source == "git"
+
+- name: Remove non-git release path before git deployment
+  ansible.builtin.file:
+    path: "{{ app_release_path }}"
+    state: absent
+  when:
+    - app_source == "git"
+    - app_release_path_stat.stat.exists
+    - not app_git_metadata.stat.exists
+
+- name: Deploy app from git repository
+  ansible.builtin.git:
+    repo: "{{ app_git_repo }}"
+    dest: "{{ app_release_path }}"
+    version: "{{ app_git_version }}"
+    update: true
+    force: true
+    depth: 1
+    single_branch: true
+  when: app_source == "git"
+
+- name: Remove tarball marker when deploying from git
+  ansible.builtin.file:
+    path: "{{ app_release_path }}/.deployed_by_tarball"
+    state: absent
+  when: app_source == "git"
