@@ -1,0 +1,16 @@
+---
+- name: Deploy nginx site configuration
+  ansible.builtin.template:
+    src: site.conf.j2
+    dest: /etc/nginx/conf.d/initd.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload nginx
+
+- name: Remove default nginx site on Debian
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  when: ansible_facts.os_family == "Debian"
+  notify: reload nginx
