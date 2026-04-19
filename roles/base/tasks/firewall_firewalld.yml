@@ -1,0 +1,23 @@
+---
+- name: Ensure firewalld is enabled and running
+  ansible.builtin.service:
+    name: firewalld
+    enabled: true
+    state: started
+  when:
+    - base_firewall_enabled
+    - ansible_facts.os_family == "RedHat"
+
+- name: Allow required services in firewalld
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop:
+    - ssh
+    - http
+    - https
+  when:
+    - base_firewall_enabled
+    - ansible_facts.os_family == "RedHat"
