@@ -1,135 +1,15 @@
 ---
-- name: Validate app source mode
-  ansible.builtin.assert:
-    that:
-      - app_source in ['tarball', 'git']
-    fail_msg: "app_source must be either 'tarball' or 'git'."
+- name: Load app validation tasks
+  ansible.builtin.import_tasks: validate.yml
 
-- name: Validate tarball settings
-  ansible.builtin.assert:
-    that:
-      - app_tarball_url | length > 0
-    fail_msg: "app_tarball_url is required when app_source=tarball."
-  when: app_source == "tarball"
+- name: Load app directory tasks
+  ansible.builtin.import_tasks: directories.yml
 
-- name: Validate git settings
-  ansible.builtin.assert:
-    that:
-      - app_git_repo | length > 0
-    fail_msg: "app_git_repo is required when app_source=git."
-  when: app_source == "git"
+- name: Load app tarball deployment tasks
+  ansible.builtin.import_tasks: deploy_tarball.yml
 
-- name: Ensure deployment base directory exists
-  ansible.builtin.file:
-    path: "{{ app_deploy_path }}"
-    state: directory
-    owner: root
-    group: root
-    mode: "0755"
+- name: Load app git deployment tasks
+  ansible.builtin.import_tasks: deploy_git.yml
 
-- name: Check whether tarball deployment marker exists
-  ansible.builtin.stat:
-    path: "{{ app_release_path }}/.deployed_by_tarball"
-  register: app_tarball_marker
-  when: app_source == "tarball"
-
-- name: Download app tarball
-  ansible.builtin.get_url:
-    url: "{{ app_tarball_url }}"
-    dest: "{{ app_tmp_tarball }}"
-    mode: "0644"
-  register: app_tarball_fetch
-  when: app_source == "tarball"
-
-- name: Reset release directory when tarball changed or first deploy
-  ansible.builtin.file:
-    path: "{{ app_release_path }}"
-    state: absent
-  when:
-    - app_source == "tarball"
-    - app_tarball_fetch.changed or not app_tarball_marker.stat.exists
-
-- name: Ensure release directory exists for tarball deployment
-  ansible.builtin.file:
-    path: "{{ app_release_path }}"
-    state: directory
-    owner: "{{ app_owner }}"
-    group: "{{ app_group }}"
-    mode: "0755"
-  when: app_source == "tarball"
-
-- name: Extract app tarball
-  ansible.builtin.unarchive:
-    src: "{{ app_tmp_tarball }}"
-    dest: "{{ app_release_path }}"
-    remote_src: true
-    extra_opts: "{{ ['--strip-components=' ~ (app_tarball_strip_components | string)] if (app_tarball_strip_components | int) > 0 else omit }}"
-  when:
-    - app_source == "tarball"
-    - app_tarball_fetch.changed or not app_tarball_marker.stat.exists
-
-- name: Mark successful tarball deployment
-  ansible.builtin.copy:
-    dest: "{{ app_release_path }}/.deployed_by_tarball"
-    content: "source={{ app_tarball_url }}\n"
-    owner: root
-    group: root
-    mode: "0644"
-  when:
-    - app_source == "tarball"
-    - app_tarball_fetch.changed or not app_tarball_marker.stat.exists
-
-- name: Remove downloaded tarball artifact
-  ansible.builtin.file:
-    path: "{{ app_tmp_tarball }}"
-    state: absent
-  when:
-    - app_source == "tarball"
-    - app_cleanup_artifacts
-
-- name: Check whether release path is already a git worktree
-  ansible.builtin.stat:
-    path: "{{ app_release_path }}/.git"
-  register: app_git_metadata
-  when: app_source == "git"
-
-- name: Check whether release path exists
-  ansible.builtin.stat:
-    path: "{{ app_release_path }}"
-  register: app_release_path_stat
-  when: app_source == "git"
-
-- name: Remove non-git release path before git deployment
-  ansible.builtin.file:
-    path: "{{ app_release_path }}"
-    state: absent
-  when:
-    - app_source == "git"
-    - app_release_path_stat.stat.exists
-    - not app_git_metadata.stat.exists
-
-- name: Deploy app from git repository
-  ansible.builtin.git:
-    repo: "{{ app_git_repo }}"
-    dest: "{{ app_release_path }}"
-    version: "{{ app_git_version }}"
-    update: true
-    force: true
-    depth: 1
-    single_branch: true
-  when: app_source == "git"
-
-- name: Remove tarball marker when deploying from git
-  ansible.builtin.file:
-    path: "{{ app_release_path }}/.deployed_by_tarball"
-    state: absent
-  when: app_source == "git"
-
-- name: Ensure app ownership and permissions
-  ansible.builtin.file:
-    path: "{{ app_release_path }}"
-    state: directory
-    owner: "{{ app_owner }}"
-    group: "{{ app_group }}"
-    mode: "u=rwX,g=rX,o=rX"
-    recurse: true
+- name: Load app permissions tasks
+  ansible.builtin.import_tasks: permissions.yml
