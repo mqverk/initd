@@ -1,0 +1,11 @@
+---
+# Global defaults; override per environment as needed.
+app_source: tarball
+app_tarball_url: https://github.com/mdn/beginner-html-site-styled/archive/refs/heads/gh-pages.tar.gz
+app_git_repo: https://github.com/mdn/beginner-html-site-styled.git
+app_git_version: gh-pages
+app_deploy_path: /var/www/initd
+app_cleanup_artifacts: true
+
+ssh_authorized_user: root
+ssh_public_keys: []
