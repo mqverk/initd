@@ -1,95 +1,12 @@
 ---
-- name: Install base packages on Debian
-  ansible.builtin.apt:
-    name: "{{ base_packages + (['fail2ban'] if base_fail2ban_enabled else []) + ([base_debian_firewall_package] if base_firewall_enabled else []) }}"
-    state: present
-    update_cache: true
-    cache_valid_time: 3600
-  when: ansible_facts.os_family == "Debian"
+- name: Load base package tasks
+  ansible.builtin.import_tasks: packages.yml
 
-- name: Install base packages on RedHat
-  ansible.builtin.package:
-    name: "{{ base_packages + (['fail2ban'] if base_fail2ban_enabled else []) + ([base_redhat_firewall_package] if base_firewall_enabled else []) }}"
-    state: present
-  when: ansible_facts.os_family == "RedHat"
+- name: Load fail2ban tasks
+  ansible.builtin.import_tasks: fail2ban.yml
 
-- name: Configure fail2ban SSH jail
-  ansible.builtin.copy:
-    dest: /etc/fail2ban/jail.d/sshd.local
-    owner: root
-    group: root
-    mode: "0644"
-    content: |
-      [sshd]
-      enabled = true
-      maxretry = 5
-      bantime = 1h
-      findtime = 10m
-  when: base_fail2ban_enabled
-  notify: restart fail2ban
+- name: Load UFW tasks
+  ansible.builtin.import_tasks: firewall_ufw.yml
 
-- name: Ensure fail2ban service is enabled and running
-  ansible.builtin.service:
-    name: fail2ban
-    enabled: true
-    state: started
-  when: base_fail2ban_enabled
-
-- name: Set UFW default incoming policy to deny
-  community.general.ufw:
-    direction: incoming
-    policy: deny
-  when:
-    - base_firewall_enabled
-    - ansible_facts.os_family == "Debian"
-
-- name: Set UFW default outgoing policy to allow
-  community.general.ufw:
-    direction: outgoing
-    policy: allow
-  when:
-    - base_firewall_enabled
-    - ansible_facts.os_family == "Debian"
-
-- name: Allow required TCP ports with UFW
-  community.general.ufw:
-    rule: allow
-    port: "{{ item }}"
-    proto: tcp
-  loop:
-    - "{{ base_ssh_port }}"
-    - "80"
-    - "443"
-  when:
-    - base_firewall_enabled
-    - ansible_facts.os_family == "Debian"
-
-- name: Ensure UFW is enabled
-  community.general.ufw:
-    state: enabled
-  when:
-    - base_firewall_enabled
-    - ansible_facts.os_family == "Debian"
-
-- name: Ensure firewalld is enabled and running
-  ansible.builtin.service:
-    name: firewalld
-    enabled: true
-    state: started
-  when:
-    - base_firewall_enabled
-    - ansible_facts.os_family == "RedHat"
-
-- name: Allow required services in firewalld
-  ansible.posix.firewalld:
-    service: "{{ item }}"
-    permanent: true
-    immediate: true
-    state: enabled
-  loop:
-    - ssh
-    - http
-    - https
-  when:
-    - base_firewall_enabled
-    - ansible_facts.os_family == "RedHat"
+- name: Load firewalld tasks
+  ansible.builtin.import_tasks: firewall_firewalld.yml
